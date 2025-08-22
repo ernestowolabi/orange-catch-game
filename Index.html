@@ -3,239 +3,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Irys AI Reply Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        // Tailwind configuration to ensure Inter font is used
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'inter': ['Inter', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
+    <title>Orange Catcher</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        :root {
+            --orange-primary: #FF8C00; /* DarkOrange */
+            --orange-light: #FFA500; /* Orange */
+            --orange-dark: #CC7700;
+            --yellow-accent: #FFD700; /* Gold */
+            --brown-earth: #8B4513; /* SaddleBrown */
+            --text-color: #333;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
+            background-color: var(--yellow-accent);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px; /* Reduced padding for more space */
+            box-sizing: border-box;
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 95vmin; /* Increased width */
+            height: 85vmin; /* Increased height */
+            max-width: 800px; /* Increased max-width */
+            max-height: 700px; /* Increased max-height */
+            background-color: var(--orange-light);
+            border: 10px solid var(--orange-dark);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            touch-action: none; /* Disables default touch actions for better game control */
+        }
+
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 2em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        #player {
+            position: absolute;
+            bottom: 20px;
+            width: 80px;
+            height: 20px;
+            background-color: var(--brown-earth);
+            border-radius: 5px;
+            left: calc(50% - 40px); /* Center the player initially */
+        }
+
+        .orange {
+            position: absolute;
+            top: -50px; /* Start off-screen */
+            width: 40px;
+            height: 40px;
+            background-color: var(--orange-primary);
+            border-radius: 50%;
+            border: 2px solid var(--orange-dark);
+            box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.2), 
+                        inset 5px 5px 10px rgba(255, 255, 255, 0.5);
+            animation: fall 3s linear infinite; /* Fall animation */
+        }
+
+        @keyframes fall {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        .game-over-modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            text-align: center;
+            z-index: 20;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .game-over-modal h2 {
+            font-size: 3em;
+            margin: 0;
+        }
+
+        .game-over-modal p {
+            font-size: 1.5em;
+            margin: 10px 0 20px;
+        }
+
+        .restart-button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background-color: var(--brown-earth);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
             transition: background-color 0.3s ease;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .gradient-text {
-            background-image: linear-gradient(to right, #60a5fa, #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        
+        .restart-button:hover {
+            background-color: #6a340f;
         }
-        .animate-spin-slow {
-            animation: spin 3s linear infinite;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        
+        /* Responsive styles for smaller screens */
+        @media (max-width: 600px) {
+            .game-container {
+                width: 95vmin;
+                height: 95vmin;
+            }
+            #player {
+                width: 60px;
+                height: 15px;
+            }
+            .orange {
+                width: 30px;
+                height: 30px;
+            }
+            #score-display {
+                font-size: 1.5em;
+            }
+            .game-over-modal h2 {
+                font-size: 2em;
+            }
+            .game-over-modal p {
+                font-size: 1.2em;
+            }
+            .restart-button {
+                font-size: 1em;
+            }
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
+<body>
 
-    <div class="max-w-2xl w-full p-6 md:p-10 bg-slate-800 rounded-2xl shadow-xl flex flex-col items-center">
+    <div class="game-container">
+        <!-- Score display -->
+        <div id="score-display">Score: 0</div>
+        <!-- The player element (the basket) -->
+        <div id="player"></div>
         
-        <!-- Header Section -->
-        <div class="flex items-center space-x-3 mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-purple-400 animate-spin-slow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
-                <path d="M8 12h8M12 8v8"></path>
-            </svg>
-            <h1 class="text-3xl font-bold gradient-text">Irys Reply Bot</h1>
-        </div>
-        
-        <!-- Description Text -->
-        <p class="text-gray-400 text-center mb-8">
-            Paste a tweet and get a smart, on-topic reply generated by AI, ready to post.
-        </p>
-
-        <!-- Main Input Area for the Tweet -->
-        <textarea
-            id="tweetInput"
-            class="w-full h-32 p-4 mb-4 bg-slate-700 text-gray-200 border border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-500 transition-colors resize-none"
-            placeholder="e.g., 'Permanent data storage on a blockchain seems like the holy grail for Web3. What are the current challenges?'"
-        ></textarea>
-
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row w-full space-y-4 sm:space-y-0 sm:space-x-4">
-            <!-- Generate Button -->
-            <button
-                id="generateBtn"
-                class="w-full px-6 py-3 bg-purple-600 text-white font-semibold rounded-xl shadow-lg hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-800 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                <svg id="generateIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M12 4h9"/><path d="M12 12h9"/><path d="M3 20l3.5-3.5"/><path d="M3 4l3.5 3.5"/><path d="M3 12l3.5 3.5"/></svg>
-                <svg id="loadingIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 hidden animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M21 12h-4"/><path d="M17 19l4-4-4-4"/></svg>
-                <span id="buttonText">Generate Reply</span>
-            </button>
-            <!-- Copy Button -->
-            <button
-                id="copyBtn"
-                class="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                disabled
-            >
-                <svg id="copyIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                Copy Reply
-            </button>
-        </div>
-
-        <!-- Output Area for the Generated Reply -->
-        <div id="outputContainer" class="w-full mt-8 hidden">
-            <h2 class="text-xl font-bold text-gray-200 mb-4">
-                Generated Reply
-            </h2>
-            <div id="replyOutput" class="p-6 bg-slate-700 text-gray-300 rounded-xl leading-relaxed whitespace-pre-wrap"></div>
-        </div>
-
-        <!-- Custom Message Box for Notifications -->
-        <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-            <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-sm w-full text-center border-2 border-purple-500">
-                <p id="messageText" class="text-gray-200 mb-4"></p>
-                <button id="messageBoxClose" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
-                    Close
-                </button>
-            </div>
+        <!-- Game Over screen -->
+        <div class="game-over-modal" id="gameOverModal">
+            <h2>Game Over!</h2>
+            <p>Your Score: <span id="finalScore">0</span></p>
+            <button class="restart-button" id="restartButton">Play Again</button>
         </div>
     </div>
 
     <script>
-        // Get all the necessary DOM elements
-        const tweetInput = document.getElementById('tweetInput');
-        const generateBtn = document.getElementById('generateBtn');
-        const copyBtn = document.getElementById('copyBtn');
-        const buttonText = document.getElementById('buttonText');
-        const generateIcon = document.getElementById('generateIcon');
-        const loadingIcon = document.getElementById('loadingIcon');
-        const outputContainer = document.getElementById('outputContainer');
-        const replyOutput = document.getElementById('replyOutput');
-        const messageBox = document.getElementById('messageBox');
-        const messageText = document.getElementById('messageText');
-        const messageBoxClose = document.getElementById('messageBoxClose');
+        // Get references to all necessary DOM elements
+        const gameContainer = document.querySelector('.game-container');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score-display');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const restartButton = document.getElementById('restartButton');
 
-        // Function to show a custom message box instead of browser alert()
-        const showMessage = (text) => {
-            messageText.textContent = text;
-            messageBox.classList.remove('hidden');
-        };
+        // Game state variables
+        let score = 0;
+        let isGameOver = false;
+        let playerX = gameContainer.clientWidth / 2 - player.clientWidth / 2;
+        let oranges = [];
+        let gameLoopInterval;
+        let orangeSpawnInterval;
 
-        // Close the message box when the button is clicked
-        messageBoxClose.addEventListener('click', () => {
-            messageBox.classList.add('hidden');
-        });
+        // Function to update the player's position
+        function updatePlayerPosition() {
+            player.style.left = `${playerX}px`;
+        }
 
-        // Set the loading state for the buttons and UI
-        const setLoading = (isLoading) => {
-            generateBtn.disabled = isLoading;
-            copyBtn.disabled = isLoading;
-            if (isLoading) {
-                buttonText.textContent = 'Generating...';
-                generateIcon.classList.add('hidden');
-                loadingIcon.classList.remove('hidden');
-            } else {
-                buttonText.textContent = 'Generate Reply';
-                generateIcon.classList.remove('hidden');
-                loadingIcon.classList.add('hidden');
+        // Handle keyboard input for player movement
+        function handleKeydown(e) {
+            if (isGameOver) return;
+
+            const playerSpeed = 10;
+            if (e.key === 'ArrowLeft' || e.key === 'a') {
+                playerX -= playerSpeed;
+            } else if (e.key === 'ArrowRight' || e.key === 'd') {
+                playerX += playerSpeed;
             }
-        };
 
-        // Main function to handle the AI reply generation
-        generateBtn.addEventListener('click', async () => {
-            const tweet = tweetInput.value.trim();
-            if (!tweet) {
-                showMessage('Please enter a tweet to get a reply.');
-                return;
+            // Keep the player within the game container boundaries
+            const containerWidth = gameContainer.clientWidth;
+            const playerWidth = player.clientWidth;
+            if (playerX < 0) {
+                playerX = 0;
+            } else if (playerX > containerWidth - playerWidth) {
+                playerX = containerWidth - playerWidth;
+            }
+            updatePlayerPosition();
+        }
+
+        // Handle touch and mouse input for player movement
+        function handlePointerMove(e) {
+            if (isGameOver) return;
+            // Get the horizontal position relative to the game container
+            const containerLeft = gameContainer.getBoundingClientRect().left;
+            let clientX = e.clientX;
+            // Use e.touches for touch events
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
             }
             
-            // Reset UI state before starting the generation
-            setLoading(true);
-            outputContainer.classList.add('hidden');
-            replyOutput.textContent = '';
-            copyBtn.disabled = true;
+            // Calculate the new player position
+            const newPlayerX = clientX - containerLeft - (player.clientWidth / 2);
 
-            // Construct the prompt for the AI model
-            const prompt = `You are an expert on Irys, a layer-1 blockchain with a programmable datachain. Your goal is to generate a short, insightful, and engaging reply to the following tweet. The reply should be helpful, concise, and demonstrate a clear understanding of how Irys's features like permanent storage, programmable data, and verifiable compute can solve the problem or relate to the topic in the tweet. Do not use generic phrases like "Great point!" or "Interesting thought!". Be specific, enthusiastic, and direct.
+            // Update player position, clamping it to the container's bounds
+            playerX = Math.max(0, Math.min(newPlayerX, gameContainer.clientWidth - player.clientWidth));
+            updatePlayerPosition();
+        }
 
-Tweet to reply to: "${tweet}"
+        // Function to create and add a new orange to the game
+        function createOrange() {
+            if (isGameOver) return;
+            const orange = document.createElement('div');
+            orange.classList.add('orange');
+            // Set a random starting horizontal position
+            orange.style.left = `${Math.random() * (gameContainer.clientWidth - 40)}px`;
+            gameContainer.appendChild(orange);
+            oranges.push(orange);
+        }
 
-Example Reply: "This is a perfect use case for Irys's programmable data! You could embed logic directly into the data to trigger a smart contract when specific conditions are met. This is a game-changer for on-chain automation. #Irys"
+        // The main game loop
+        function gameLoop() {
+            if (isGameOver) return;
 
-Now, generate a reply for the tweet:`;
+            // Move each orange down
+            oranges.forEach(orange => {
+                const orangeTop = orange.offsetTop;
+                const orangeHeight = orange.offsetHeight;
+                const orangeSpeed = 2 + (score * 0.01); // Increase speed with score
+                orange.style.top = `${orangeTop + orangeSpeed}px`;
 
-            // Prepare the payload for the Gemini API call
-            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-            const payload = { contents: chatHistory };
-            const apiKey = ""; // The platform will inject the API key here
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            let retries = 0;
-            const maxRetries = 5;
+                // Get the player's position and dimensions
+                const playerRect = player.getBoundingClientRect();
+                const orangeRect = orange.getBoundingClientRect();
+                const containerRect = gameContainer.getBoundingClientRect();
 
-            // Asynchronous function for fetching data with exponential backoff
-            const fetchData = async () => {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    // Check for a non-OK response and throw an error
-                    if (!response.ok) {
-                        throw new Error(`API call failed with status: ${response.status}`);
-                    }
-
-                    // Parse the JSON response
-                    const result = await response.json();
-                    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                    if (text) {
-                        // Display the generated reply
-                        replyOutput.textContent = text;
-                        outputContainer.classList.remove('hidden');
-                        copyBtn.disabled = false;
-                    } else {
-                        // Handle cases where the response is missing content
-                        showMessage('Failed to get a response from the model. Please try again.');
-                    }
-                } catch (e) {
-                    // Handle API errors with exponential backoff
-                    if (retries < maxRetries) {
-                        const delay = Math.pow(2, retries) * 1000;
-                        console.error(`API call failed, retrying in ${delay}ms...`, e);
-                        retries++;
-                        setTimeout(fetchData, delay);
-                    } else {
-                        // Show a user-friendly error message after all retries fail
-                        console.error('API call failed after multiple retries.', e);
-                        showMessage('An error occurred. Please check your network connection and try again.');
-                    }
-                } finally {
-                    // Ensure the loading state is reset after a successful response or final failure
-                    if (retries >= maxRetries || outputContainer.classList.contains('hidden') === false) {
-                        setLoading(false);
-                    }
+                // Check for collisions between the player and the orange
+                if (
+                    orangeRect.bottom >= playerRect.top &&
+                    orangeRect.right >= playerRect.left &&
+                    orangeRect.left <= playerRect.right &&
+                    orangeRect.bottom <= playerRect.bottom
+                ) {
+                    // Collision detected, remove the orange and increase score
+                    orange.remove();
+                    oranges = oranges.filter(o => o !== orange);
+                    score++;
+                    scoreDisplay.textContent = `Score: ${score}`;
                 }
-            };
-            fetchData();
+
+                // Check if the orange has reached the bottom without being caught
+                if (orangeRect.bottom >= containerRect.bottom) {
+                    // Game over if an orange is missed
+                    endGame();
+                }
+            });
+        }
+
+        // Function to end the game
+        function endGame() {
+            isGameOver = true;
+            // Clear the game loop and orange spawning intervals
+            clearInterval(gameLoopInterval);
+            clearInterval(orangeSpawnInterval);
+            // Show the game over modal with the final score
+            finalScoreDisplay.textContent = score;
+            gameOverModal.style.display = 'flex';
+        }
+
+        // Function to start a new game
+        function startGame() {
+            score = 0;
+            isGameOver = false;
+            scoreDisplay.textContent = `Score: 0`;
+            gameOverModal.style.display = 'none';
+
+            // Remove all existing oranges
+            oranges.forEach(orange => orange.remove());
+            oranges = [];
+
+            // Reset player position
+            playerX = gameContainer.clientWidth / 2 - player.clientWidth / 2;
+            updatePlayerPosition();
+
+            // Start the game loop and orange spawning
+            gameLoopInterval = setInterval(gameLoop, 16); // ~60fps
+            orangeSpawnInterval = setInterval(createOrange, 1000); // Create an orange every second
+        }
+
+        // Add event listeners
+        document.addEventListener('keydown', handleKeydown);
+        gameContainer.addEventListener('pointermove', handlePointerMove);
+        restartButton.addEventListener('click', startGame);
+
+        // Make the game responsive on resize
+        window.addEventListener('resize', () => {
+            const containerWidth = gameContainer.clientWidth;
+            const playerWidth = player.clientWidth;
+            if (playerX > containerWidth - playerWidth) {
+                playerX = containerWidth - playerWidth;
+            }
+            updatePlayerPosition();
         });
 
-        // Copy the generated reply to the clipboard
-        copyBtn.addEventListener('click', () => {
-            const replyText = replyOutput.textContent;
-            if (replyText) {
-                // Use the clipboard API to copy the text
-                navigator.clipboard.writeText(replyText).then(() => {
-                    showMessage('Reply copied to clipboard!');
-                }).catch(err => {
-                    showMessage('Failed to copy text. Please try again or copy manually.');
-                    console.error('Copy to clipboard failed: ', err);
-                });
-            }
-        });
+        // Start the game when the window loads
+        window.onload = startGame;
     </script>
 </body>
 </html>
+
